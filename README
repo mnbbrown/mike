@@ -20,6 +20,12 @@ KEYS
              field=value matches a JSON field. numbers compare
              numerically: latency_ms>200, code>=500, n<10.
              terms are ANDed: service=api latency_ms>200 timeout
+
+             or skip the syntax: describe what you want in plain
+             english ("slow api calls that failed") and press tab.
+             claude turns it into a filter, right there in the
+             input box, so you can see and edit what it wrote.
+             needs ANTHROPIC_API_KEY in the environment.
     k        field picker. tick the JSON fields you want with
              space, enter when done. nothing ticked = show all.
     up/down  select a line

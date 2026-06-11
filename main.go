@@ -31,6 +31,8 @@ Usage:
 Keys inside:
   /      search — plain words, field=value, or field>n / field>=n / field<n
          e.g. "service=api latency_ms>200 timeout"
+         or describe what you want in english and press tab to have
+         Claude write the filter for you (needs ANTHROPIC_API_KEY)
   k      pick which JSON fields to show (tick boxes with space)
   ↑↓     pick a line; enter expands it, y copies it
   e / w  show only errors / warnings+errors

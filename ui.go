@@ -44,6 +44,13 @@ type procExitMsg struct {
 }
 type clearFlashMsg struct{}
 
+// nlResultMsg carries Claude's translation of a plain-english search.
+type nlResultMsg struct {
+	query  string
+	filter string
+	err    error
+}
+
 var (
 	styHeader   = lipgloss.NewStyle().Background(lipgloss.Color("236")).Foreground(lipgloss.Color("252")).Padding(0, 1)
 	styHeaderHi = lipgloss.NewStyle().Background(lipgloss.Color("236")).Foreground(lipgloss.Color("214")).Bold(true)
@@ -112,9 +119,14 @@ type model struct {
 	// An empty ticked set means "show every field".
 	fields     []string
 	fieldCount map[string]int
+	samples    map[string][]string // a few example values per field, for Claude
 	jsonLines  int
 	ticked     map[string]bool
 	cursor     int
+
+	// plain-english search translation in flight
+	thinking bool
+	nlQuery  string
 
 	// line selection
 	selID    uint64 // Entry.ID, 0 = nothing selected
@@ -151,6 +163,7 @@ func newModel(cmdline string, maxLines int, ch <-chan Entry, exitCh <-chan procE
 		maxLines:   maxLines,
 		input:      ti,
 		fieldCount: map[string]int{},
+		samples:    map[string][]string{},
 		ticked:     map[string]bool{},
 		expanded:   map[uint64]bool{},
 		follow:     true,
@@ -206,7 +219,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			m.vp.Width, m.vp.Height = m.width, bodyH
 		}
-		m.input.Width = m.width - 12
+		m.input.Width = max(20, m.width-40)
 		m.rebuildAll()
 		return m, nil
 
@@ -251,6 +264,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.flash = ""
 		return m, nil
 
+	case nlResultMsg:
+		if !m.thinking || msg.query != m.nlQuery {
+			return m, nil // user moved on; drop the stale answer
+		}
+		m.thinking = false
+		if msg.err != nil {
+			m.flash = msg.err.Error()
+		} else if msg.filter == "" {
+			m.flash = "claude couldn't make a filter from that"
+		} else {
+			m.input.SetValue(msg.filter)
+			m.input.CursorEnd()
+			m.applySearch(msg.filter)
+			m.flash = "✨ " + m.nlQuery
+		}
+		return m, tea.Tick(3*time.Second, func(time.Time) tea.Msg { return clearFlashMsg{} })
+
 	case tea.KeyMsg:
 		switch m.mode {
 		case modeSearch:
@@ -278,11 +308,20 @@ func (m *model) discoverFields(e *Entry) {
 	}
 	m.jsonLines++
 	changed := false
-	for k := range e.JSON {
+	for k, v := range e.JSON {
 		m.fieldCount[k]++
 		if !slices.Contains(m.fields, k) {
 			m.fields = append(m.fields, k)
 			changed = true
+		}
+		if len(m.samples[k]) < 3 {
+			s := formatValue(v)
+			if len(s) > 30 {
+				s = s[:30] + "…"
+			}
+			if !slices.Contains(m.samples[k], s) {
+				m.samples[k] = append(m.samples[k], s)
+			}
 		}
 	}
 	if changed {
@@ -452,7 +491,26 @@ func (m model) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.mode = modeNormal
 		m.input.Blur()
 		return m, nil
+
+	case "tab":
+		query := strings.TrimSpace(m.input.Value())
+		if query == "" || m.thinking {
+			return m, nil
+		}
+		m.thinking = true
+		m.nlQuery = query
+		// snapshot for the goroutine; the live maps keep mutating
+		fields := slices.Clone(m.fields)
+		samples := make(map[string][]string, len(m.samples))
+		for k, v := range m.samples {
+			samples[k] = slices.Clone(v)
+		}
+		return m, func() tea.Msg {
+			filter, err := nlToFilter(query, fields, samples)
+			return nlResultMsg{query: query, filter: filter, err: err}
+		}
 	case "esc":
+		m.thinking = false
 		m.search = ""
 		m.terms = nil
 		m.needles = nil
@@ -465,17 +523,22 @@ func (m model) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	m.input, cmd = m.input.Update(msg)
 	if v := strings.ToLower(m.input.Value()); v != m.search {
-		m.search = v
-		m.terms = parseSearch(v)
-		m.needles = m.needles[:0]
-		for _, t := range m.terms {
-			if t.op == opEq && t.val != "" {
-				m.needles = append(m.needles, t.val)
-			}
-		}
-		m.rebuildAll()
+		m.thinking = false // typing cancels a pending translation
+		m.applySearch(v)
 	}
 	return m, cmd
+}
+
+func (m *model) applySearch(v string) {
+	m.search = strings.ToLower(v)
+	m.terms = parseSearch(m.search)
+	m.needles = m.needles[:0]
+	for _, t := range m.terms {
+		if t.op == opEq && t.val != "" {
+			m.needles = append(m.needles, t.val)
+		}
+	}
+	m.rebuildAll()
 }
 
 func (m model) updatePicker(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -870,7 +933,11 @@ func helpItem(key, label string) string {
 func (m model) footerView() string {
 	switch m.mode {
 	case modeSearch:
-		return styPrompt.Render(" search> ") + m.input.View()
+		hint := styHelp.Render("  tab: plain english ✨")
+		if m.thinking {
+			hint = styPrompt.Render("  ✨ thinking…")
+		}
+		return ansi.Truncate(styPrompt.Render(" search> ")+m.input.View()+hint, m.width, "…")
 	case modePicker:
 		help := strings.Join([]string{
 			helpItem("↑↓", "move"),
