@@ -1,0 +1,34 @@
+README
+  s_58b4e1af9b7a1e::t_ca3714028e325c 23-28
+main.go
+  s_58b4e1af9b7a1e::t_6b54d34ac70cab 34-35
+ui.go
+  s_58b4e1af9b7a1e::t_d66af007f42936 222
+  s_58b4e1af9b7a1e::t_bdea14056ac059 311,317-324
+  s_58b4e1af9b7a1e::t_21bb997d9c2fe5 494-511
+  s_58b4e1af9b7a1e::t_aac3f28b9be072 936-940
+  s_58b4e1af9b7a1e::t_59a879cb2fa67e 47-53
+  s_58b4e1af9b7a1e::t_36676b7419b815 122,127-129
+  s_58b4e1af9b7a1e::t_ca87250016212c 166
+  s_58b4e1af9b7a1e::t_662eb8d8ad0e8c 267-283
+  s_58b4e1af9b7a1e::t_053e253eb8c613 526-527,532-541
+  s_58b4e1af9b7a1e::t_eb824ab37c517d 513
+ai.go
+  s_58b4e1af9b7a1e::t_c5a7ed37c8d07b 1-104
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "726924ea193644a80112ad1216aeef8dd076b924",
+  "prompts": {},
+  "sessions": {
+    "s_58b4e1af9b7a1e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dbf83a5a-a246-485e-ac9f-e5119a6247aa",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Matt Brown <matt@elyos.ai>"
+    }
+  }
+}
