@@ -1,11 +1,15 @@
+// mike is a friendly terminal viewer for streaming logs: it runs a command
+// (or reads a pipe) and gives you live tailing, native JSON parsing, search
+// and field picking with no query language to learn.
 package main
 
 import (
 	"bufio"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
-	"math/rand"
+	"math/rand/v2"
 	"os"
 	"os/exec"
 	"strings"
@@ -79,7 +83,7 @@ func main() {
 		if err != nil {
 			fatal(fmt.Errorf("cannot open terminal for keyboard input: %w", err))
 		}
-		defer tty.Close()
+		defer func() { _ = tty.Close() }()
 		opts = append(opts, tea.WithInput(tty))
 		cmdline = "stdin"
 		c := make(chan Entry, 1024)
@@ -131,7 +135,8 @@ func startCmd(args []string) (<-chan Entry, <-chan procExitMsg, func()) {
 		wg.Wait()
 		msg := procExitMsg{}
 		if err := cmd.Wait(); err != nil {
-			if ee, ok := err.(*exec.ExitError); ok {
+			var ee *exec.ExitError
+			if errors.As(err, &ee) {
 				msg.code = ee.ExitCode()
 			} else {
 				msg.err = err.Error()
@@ -173,11 +178,11 @@ func runDemo(ch chan<- Entry) {
 	i := 0
 	for {
 		i++
-		lvl := levels[rand.Intn(len(levels))]
+		lvl := levels[rand.IntN(len(levels))]
 		line := fmt.Sprintf(
 			`{"time":%q,"level":%q,"msg":%q,"service":%q,"request_id":"req-%04d","latency_ms":%d,"user":{"id":%d,"plan":"pro"}}`,
-			time.Now().Format(time.RFC3339), lvl, msgs[rand.Intn(len(msgs))],
-			services[rand.Intn(len(services))], i, rand.Intn(900)+10, rand.Intn(5000),
+			time.Now().Format(time.RFC3339), lvl, msgs[rand.IntN(len(msgs))],
+			services[rand.IntN(len(services))], i, rand.IntN(900)+10, rand.IntN(5000),
 		)
 		src := SrcStdout
 		if lvl == "error" {
@@ -187,6 +192,6 @@ func runDemo(ch chan<- Entry) {
 		if i%17 == 0 {
 			ch <- NewEntry("plain text line: something non-JSON happened", SrcStdout)
 		}
-		time.Sleep(time.Duration(rand.Intn(400)+80) * time.Millisecond)
+		time.Sleep(time.Duration(rand.IntN(400)+80) * time.Millisecond)
 	}
 }

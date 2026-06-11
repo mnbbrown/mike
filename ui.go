@@ -821,11 +821,12 @@ func (m model) pickerView() string {
 func (m model) headerView() string {
 	status := styExitOK.Render("● running")
 	if m.procDone {
-		if m.exit.code == 0 && m.exit.err == "" {
-			status = styExitOK.Render("● finished")
-		} else if m.exit.err != "" {
+		switch {
+		case m.exit.err != "":
 			status = styExitBad.Render("● " + m.exit.err)
-		} else {
+		case m.exit.code == 0:
+			status = styExitOK.Render("● finished")
+		default:
 			status = styExitBad.Render(fmt.Sprintf("● exited %d", m.exit.code))
 		}
 	}

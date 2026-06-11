@@ -76,7 +76,7 @@ var operators = []struct {
 // matched against that field, e.g. "service=api latency_ms>200 timeout".
 func parseSearch(s string) []term {
 	var terms []term
-	for _, f := range strings.Fields(strings.ToLower(s)) {
+	for f := range strings.FieldsSeq(strings.ToLower(s)) {
 		t := term{val: f}
 		for _, o := range operators {
 			if k, v, ok := strings.Cut(f, o.s); ok && k != "" {
@@ -257,7 +257,7 @@ func formatValue(v any) string {
 	case json.Number:
 		return t.String()
 	case bool:
-		return fmt.Sprintf("%v", t)
+		return strconv.FormatBool(t)
 	default:
 		var buf bytes.Buffer
 		enc := json.NewEncoder(&buf)
