@@ -1,0 +1,27 @@
+entry.go
+  s_58b4e1af9b7a1e::t_49ddb122592765 79
+  s_58b4e1af9b7a1e::t_0c667042f87973 260
+ui.go
+  s_58b4e1af9b7a1e::t_52769890dd304e 824-825,827-829
+main.go
+  s_58b4e1af9b7a1e::t_32771014ba48c9 138-139
+  s_58b4e1af9b7a1e::t_5351d0451e5885 181,184-185,195
+  s_58b4e1af9b7a1e::t_ef3429b76022dd 1-3,8,12
+  s_58b4e1af9b7a1e::t_70a560c037e510 86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "1c8c191f2cc406c191d322ce5b2d9b87072c523a",
+  "prompts": {},
+  "sessions": {
+    "s_58b4e1af9b7a1e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dbf83a5a-a246-485e-ac9f-e5119a6247aa",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Matt Brown <matt@elyos.ai>"
+    }
+  }
+}
