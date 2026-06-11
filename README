@@ -1,0 +1,55 @@
+mike - a friendly log viewer
+============================
+
+mike is a terminal viewer for streaming logs. point it at a command
+(or pipe logs into it) and it gives you live tailing, native JSON
+parsing, search, and field picking. no query language to learn.
+
+USAGE
+
+    mike <command> [args...]      run a command, watch its logs
+    <command> 2>&1 | mike         pipe logs in
+    mike --demo                   play with pretend logs
+
+when mike runs the command itself it captures stdout and stderr
+separately; stderr lines get a red mark in the gutter.
+
+KEYS
+
+    /        search. plain words match anywhere in the line.
+             field=value matches a JSON field. numbers compare
+             numerically: latency_ms>200, code>=500, n<10.
+             terms are ANDed: service=api latency_ms>200 timeout
+    k        field picker. tick the JSON fields you want with
+             space, enter when done. nothing ticked = show all.
+    up/down  select a line
+    enter    expand the selected line into pretty JSON
+    y        copy the selected line (raw) to the clipboard
+    e        show errors only (press again to turn off)
+    w        show warnings and errors
+    j        expand every line into pretty JSON
+    f        pause/resume following
+    r        restart the command (not in pipe mode)
+    c        clear the screen
+    g / G    jump to top / bottom
+    esc      clear selection, then search, then level filter
+    q        quit
+
+NOTES
+
+    lines that parse as a JSON object get colour by level, with
+    time/level/message fields shown first. everything else passes
+    through untouched.
+
+    search applies live as you type. matches are highlighted.
+
+    while scrolled up the header counts new matching lines
+    arriving below.
+
+    memory is capped at 50000 lines (-max-lines to change).
+
+BUILD
+
+    go build -o mike .
+
+requires go 1.25 or newer.
